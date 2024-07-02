@@ -1,0 +1,5 @@
+fastapi
+uvicorn
+pydantic
+agora-token-builder
+python-dotenv
