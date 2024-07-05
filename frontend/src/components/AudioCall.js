@@ -1,41 +1,32 @@
-// src/components/AudioCall.js
-
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
+import { v4 as uuidv4 } from 'uuid';
 
-const APP_ID = '963c1a3084614e2cb469fbc72df183f9';
-const TOKEN_SERVER_URL = 'http://127.0.0.1:8000/token';
+const APP_ID = process.env.REACT_APP_AGORA_APP_ID;
+const TOKEN_SERVER_URL = process.env.REACT_APP_TOKEN_SERVER_URL;
 
-const AudioCall = ({ channelName, sessionId, onTokenGenerated, onJoinChannel, onLeaveChannel }) => {
-  const client = useRef(null);
-  const [localTrack, setLocalTrack] = useState(null);
-  const [remoteUsers, setRemoteUsers] = useState([]);
+const AudioCall = () => {
+  const rtc = useRef({
+    localAudioTrack: null,
+    client: null,
+  }).current;
+  const [remoteUsers, setRemoteUsers] = useState(new Set());
   const [joined, setJoined] = useState(false);
+  const [channelName, setChannelName] = useState('');
   const [token, setToken] = useState('');
+  const [isMuted, setIsMuted] = useState(false);
+  const [userId, setUserId] = useState('');
+  const [isPublished, setIsPublished] = useState(false);
 
-  const cleanup = useCallback(async () => {
-    try {
-      if (localTrack) {
-        localTrack.close();
-        console.log('Closed local audio track.');
-      }
-      if (client.current) {
-        await client.current.leave();
-        console.log('Left the channel.');
-      }
-    } catch (error) {
-      console.error('Cleanup error:', error);
-    }
-  }, [localTrack]); 
+  const sessionId = localStorage.getItem('session_id') || uuidv4();
+  if (!localStorage.getItem('session_id')) {
+    localStorage.setItem('session_id', sessionId);
+  }
 
-  useEffect(() => {
-    client.current = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
-    console.log('AgoraRTC client created.');
-
-    return () => {
-      cleanup();
-    };
-  }, [cleanup]);
+  if (!rtc.client) {
+    rtc.client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+    console.log('Agora Client Initialised');
+  }
 
   const generateToken = useCallback(async () => {
     try {
@@ -44,7 +35,7 @@ const AudioCall = ({ channelName, sessionId, onTokenGenerated, onJoinChannel, on
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ channelName, userName: sessionId }),
+        body: JSON.stringify({ channelName: channelName, userName: sessionId }),
       });
 
       if (!response.ok) {
@@ -55,120 +46,204 @@ const AudioCall = ({ channelName, sessionId, onTokenGenerated, onJoinChannel, on
       setToken(data.token);
       localStorage.setItem('token', data.token);
       console.log('Token received:', data.token);
-      onTokenGenerated(data.token); 
     } catch (error) {
       console.error('Error generating token:', error);
-      throw error; 
     }
-  }, [channelName, sessionId, onTokenGenerated]);
+  }, [channelName, sessionId]);
 
   const joinChannel = useCallback(async () => {
     try {
-      if (client.current.connectionState === 'DISCONNECTING') {
-        console.log('Client is disconnecting, please wait...');
-        return;
-      }
-
       const storedToken = localStorage.getItem('token');
       if (!storedToken) {
         console.error('No token found. Generate a token first.');
         await generateToken();
       }
 
-      await client.current.join(APP_ID, channelName, storedToken, sessionId);
+      await rtc.client.join(APP_ID, channelName, storedToken, sessionId);
       console.log('Joined the channel:', channelName, 'with userName:', sessionId);
+      rtc.localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+      await rtc.client.publish([rtc.localAudioTrack]);
 
-      const track = await AgoraRTC.createMicrophoneAudioTrack();
-      setLocalTrack(track);
+      setJoined(true);
+      setIsPublished(true);
 
-      const publishTrack = async () => {
-        if (client.current.connectionState === 'CONNECTED') {
-          await client.current.publish(track);
-          console.log('Published local audio track.');
-          setJoined(true);
-          onJoinChannel(); 
-        } else {
-          console.log('Waiting for connection to stabilize...');
-          setTimeout(publishTrack, 1000);
-        }
-      };
-      publishTrack();
+      // Add current session ID to remoteUsers
+      setRemoteUsers((prevUsers) => {
+        const updatedUsers = new Set(prevUsers);
+        updatedUsers.add(sessionId);
+        console.log("Updated remoteUsers after join --> ", Array.from(updatedUsers));
+        return updatedUsers;
+      });
 
-      client.current.on('token-privilege-will-expire', async () => {
+      rtc.client.on('token-privilege-will-expire', async () => {
         console.log('Token privilege will expire soon. Fetching a new token...');
         await generateToken();
-        await client.current.renewToken(token);
+        await rtc.client.renewToken(token);
         console.log('Token renewed.');
       });
 
-      client.current.on('token-privilege-did-expire', async () => {
+      rtc.client.on('token-privilege-did-expire', async () => {
         console.log('Token privilege has expired. Rejoining the channel...');
         await generateToken();
-        await client.current.leave();
-        await client.current.join(APP_ID, channelName, token, sessionId);
-        await publishTrack();
+        await rtc.client.unpublish([rtc.localAudioTrack]);
+        rtc.localAudioTrack.close();
+        await rtc.client.leave();
+        await rtc.client.join(APP_ID, channelName, token, sessionId);
+        rtc.localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+        await rtc.client.publish([rtc.localAudioTrack]);
+        setJoined(true);
+        setIsPublished(true);
         console.log('Rejoined the channel with new token.');
+      });
+
+      rtc.client.on('user-published', async (user, mediaType) => {
+        console.log('User published:', user.uid);
+        try {
+          if (mediaType === 'audio') {
+            await rtc.client.subscribe(user, mediaType);
+            setRemoteUsers((prevUsers) => {
+              const updatedUsers = new Set(prevUsers);
+              updatedUsers.add(user.uid);
+              console.log("Updated remoteUsers after user-published --> ", Array.from(updatedUsers));
+              return updatedUsers;
+            });
+            console.log('Subscribed to user:', user.uid);
+          }
+        } catch (error) {
+          console.error('Error subscribing to user:', error);
+        }
+      });
+
+      rtc.client.on('user-unpublished', (user) => {
+        console.log('User unpublished:', user.uid);
+        setRemoteUsers((prevUsers) => {
+          const updatedUsers = new Set(prevUsers);
+          updatedUsers.delete(user.uid);
+          console.log("Updated remoteUsers after user-unpublished --> ", Array.from(updatedUsers));
+          return updatedUsers;
+        });
       });
 
     } catch (error) {
       console.error('Error joining the channel:', error);
     }
-  }, [channelName, generateToken, sessionId, token, onJoinChannel]);
+  }, [channelName, generateToken, sessionId, token]);
 
   const leaveChannel = useCallback(async () => {
     try {
-      await cleanup();
+      if (rtc.localAudioTrack) {
+        await rtc.client.unpublish([rtc.localAudioTrack]);
+        rtc.localAudioTrack.close();
+      }
       setJoined(false);
-      onLeaveChannel(); 
+      setIsPublished(false);
+      await rtc.client.leave();
+
+      // Remove current session ID from remoteUsers
+      setRemoteUsers((prevUsers) => {
+        const updatedUsers = new Set(prevUsers);
+        updatedUsers.delete(sessionId);
+        console.log("Updated remoteUsers after leave --> ", Array.from(updatedUsers));
+        return updatedUsers;
+      });
+
+      console.log('Left Channel');
     } catch (error) {
       console.error('Error leaving the channel:', error);
     }
-  }, [cleanup, onLeaveChannel]);
+  }, [sessionId]);
 
-  useEffect(() => {
-    if (!client.current) return;
-
-    client.current.on('user-published', async (user, mediaType) => {
-      console.log('User published:', user.uid);
+  const toggleMute = useCallback(async () => {
+    if (rtc.localAudioTrack) {
       try {
-        await client.current.subscribe(user, mediaType);
-        console.log('Subscribed to user:', user.uid);
-
-        if (mediaType === 'audio') {
-          const audioTrack = user.audioTrack;
-          audioTrack.play();
-          setRemoteUsers((prevUsers) => [...prevUsers, user]);
-          console.log('Playing audio track for user:', user.uid);
-        }
+        const newMutedState = !isMuted;
+        await rtc.localAudioTrack.setEnabled(!newMutedState);
+        setIsMuted(newMutedState);
+        console.log(newMutedState ? 'Muted local audio track.' : 'Unmuted local audio track.');
       } catch (error) {
-        console.error('Error subscribing to user:', error);
+        console.error('Error toggling mute:', error);
       }
-    });
+    }
+  }, [isMuted]);
 
-    client.current.on('user-unpublished', (user) => {
-      console.log('User unpublished:', user.uid);
-      setRemoteUsers((prevUsers) => prevUsers.filter((u) => u.uid !== user.uid));
-    });
-
-    return () => {
-      client.current.off('user-published');
-      client.current.off('user-unpublished');
-    };
+  const publishTrack = useCallback(async () => {
+    try {
+      rtc.localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+      await rtc.client.publish([rtc.localAudioTrack]);
+      console.log('Published local audio track.');
+      setIsPublished(true);
+    } catch (error) {
+      console.error('Error publishing track:', error);
+    }
   }, []);
 
-  return (
-    <div>
-      <h3>Channel: {channelName}</h3>
-      <h4>User Name: {sessionId}</h4>
-      <div>
-        <h4>Remote Users</h4>
-        {remoteUsers.map((user) => (
-          <div key={user.uid}>User ID: {user.uid}</div>
-        ))}
-      </div>
-      <p>{joined ? 'Successfully connected to the channel.' : (token ? 'Token generated. Ready to join the channel.' : 'Generate a token to join the channel.')}</p>
-    </div>
-  );
+  const unpublishTrack = useCallback(async () => {
+    try {
+      if (rtc.localAudioTrack) {
+        await rtc.client.unpublish([rtc.localAudioTrack]);
+        rtc.localAudioTrack.close();
+        setIsPublished(false);
+        console.log('Unpublished local audio track.');
+      }
+    } catch (error) {
+      console.error('Error unpublishing track:', error);
+    }
+  }, []);
+
+  const subscribeToUser = useCallback(async () => {
+    if (!joined) {
+      console.error('Cannot subscribe to user, not joined.');
+      return;
+    }
+
+    try {
+      const user = Array.from(remoteUsers).find((uid) => uid === userId);
+      if (user) {
+        await rtc.client.subscribe(user, 'audio');
+        console.log('Subscribed to user:', user);
+      } else {
+        console.error('User not found:', userId);
+      }
+    } catch (error) {
+      console.error('Error subscribing to user:', error);
+    }
+  }, [remoteUsers, userId, joined]);
+
+  const unsubscribeFromUser = useCallback(async () => {
+    try {
+      const user = Array.from(remoteUsers).find((uid) => uid === userId);
+      if (user) {
+        await rtc.client.unsubscribe(user, 'audio');
+        console.log('Unsubscribed from user:', user);
+      } else {
+        console.error('User not found:', userId);
+      }
+    } catch (error) {
+      console.error('Error unsubscribing from user:', error);
+    }
+  }, [remoteUsers, userId]);
+
+  return {
+    rtc,
+    remoteUsers: Array.from(remoteUsers),
+    joined,
+    channelName,
+    setChannelName,
+    token,
+    isMuted,
+    userId,
+    setUserId,
+    isPublished,
+    sessionId,
+    generateToken,
+    joinChannel,
+    leaveChannel,
+    toggleMute,
+    publishTrack,
+    unpublishTrack,
+    subscribeToUser,
+    unsubscribeFromUser,
+  };
 };
 
 export default AudioCall;

@@ -13,7 +13,7 @@ This project simulates voice calling, video calling, and live streaming via Agor
 - Npm version : 10.5.0
 
 #### Windows
-1. Install `virtualenv` if not already installed:
+1. Install `virtualenv` if not already installed (Needed for First time use only) :
     ```sh
     pip install virtualenv
     ```
@@ -21,7 +21,7 @@ This project simulates voice calling, video calling, and live streaming via Agor
     ```sh
     cd backend
     ```
-3. Create a virtual environment:
+3. Create a virtual environment (Needed for First time use only) :
     ```sh
     python -m venv venv
     ```
@@ -29,7 +29,7 @@ This project simulates voice calling, video calling, and live streaming via Agor
     ```sh
     .\venv\Scripts\activate
     ```
-5. Install dependencies:
+5. Install dependencies (Needed for First time use only) :
     ```sh
     pip install -r requirements.txt
     ```
@@ -39,7 +39,7 @@ This project simulates voice calling, video calling, and live streaming via Agor
     ```
 
 #### Ubuntu/Mac
-1. Install `virtualenv` if not already installed:
+1. Install `virtualenv` if not already installed (Needed for First time use only) :
     ```sh
     pip install virtualenv
     ```
@@ -47,7 +47,7 @@ This project simulates voice calling, video calling, and live streaming via Agor
     ```sh
     cd backend
     ```
-3. Create a virtual environment:
+3. Create a virtual environment (Needed for First time use only) :
     ```sh
     python -m venv venv
     ```
@@ -55,7 +55,7 @@ This project simulates voice calling, video calling, and live streaming via Agor
     ```sh
     source venv/bin/activate
     ```
-5. Install dependencies:
+5. Install dependencies (Needed for First time use only) :
     ```sh
     pip install -r requirements.txt
     ```
@@ -74,7 +74,7 @@ This project simulates voice calling, video calling, and live streaming via Agor
     ```sh
     cd frontend
     ```
-2. Install dependencies:
+2. Install dependencies (Needed for First time use only) :
     ```sh
     npm install
     ```

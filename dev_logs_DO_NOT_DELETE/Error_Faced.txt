@@ -3,7 +3,7 @@ Error : When sending a create request to the Server, if the same application is 
 I noticed that this happens only when there are 2 users connected with the same username.
 I also noticed that the error happens on the client because the server does not receive this request, ie the client kind of loses the connection temporarily with the server socket.
 
-To reproduce the error: Create an Angular application using SocketIO Client, perform authentication in 2 or more tabs and execute any POST (create) call to the server, one of them will hang generating the error (Timeout of 5000ms exceeded calling create on ...)
+To reproduce the error: Create an React application using SocketIO Client, perform authentication in 2 or more tabs and execute any POST (create) call to the server, one of them will hang generating the error (Timeout of 5000ms exceeded calling create on ...)
 
 
 Error :     data: {"desc":"dynamic key expired","retry":false,"csIp":"13.71.36.21"} AgoraRTCExc
@@ -22,3 +22,8 @@ Token : 006963c1a3084614e2cb469fbc72df183f9IAAUURtRFHyXKR/4cYEfOB4Da//capmXWOBzY
 But Correct Token : 007eJxTYFghdurRtgXqGadf+9WbvdR9/Fikzk6N4bLrbZ7V08z/736kwGBpZpxsmGhsYGFiZmiSapScZGJmmZaUbG6UkmZoYZxm6T6tKk2Aj4HhsOsvJkYGRgYWIAbxmcAkM5hkAZNsDCWpxSXJhioMZgYm5klGKca6ZiaWqbomRgamuhZGZma6ySZGFpaWBsbJFinmACh3KRE=
 
 python module, src 
+
+-------------------
+
+
+Created Multiple Agora Clients in Agora React, need to resolve it 
