@@ -1,0 +1,11 @@
+participantID,meetingId,channelName,approvalStatus
+test3,Yhum,cb1b9e80-8d51-422b-8df2-301191528d94,approved
+test4,Yhum,cb1b9e80-8d51-422b-8df2-301191528d94,pending
+test5,Yhum,cb1b9e80-8d51-422b-8df2-301191528d94,denied
+test6,Yhum,cb1b9e80-8d51-422b-8df2-301191528d94,pending
+test_partptipant_1,fxTd,ddfb0c3c-4dac-4aef-ae7a-edb9a0a52581,denied
+test_partptipant_2,fxTd,ddfb0c3c-4dac-4aef-ae7a-edb9a0a52581,approved
+test_p_1,QdS7,ff9d2214-6ced-426d-b5cc-1ad8c0e00ca4,approved
+test_p_2,QdS7,ff9d2214-6ced-426d-b5cc-1ad8c0e00ca4,approved
+test_p_3,RYoY,49c019de-68dc-42db-b269-132b8f2218b2,approved
+Debanjan,U4R4,12dcb69b-9377-44cf-99ce-8a6d938a7b8a,approved

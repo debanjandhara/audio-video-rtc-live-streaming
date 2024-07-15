@@ -5,6 +5,8 @@ import Home from './pages/Home';
 import AudioCallPage from './pages/AudioCallPage';
 // import StreamingPage from './pages/StreamingPage';
 
+import AudioCallTestingPage from './pages/AudioCallTestingPage';
+
 const App = () => {
     return (
         <Router>
@@ -12,6 +14,7 @@ const App = () => {
                 <Route path="/" element={<Home />} />
                 {/* <Route path="/video-call" element={<VideoCallPage />} /> */}
                 <Route path="/audio-call" element={<AudioCallPage />} />
+                <Route path="/audio/:meetingLink" element={<AudioCallTestingPage />} />                
                 {/* <Route path="/streaming" element={<StreamingPage />} /> */}
             </Routes>
         </Router>

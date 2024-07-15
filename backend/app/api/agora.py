@@ -14,6 +14,6 @@ def get_token(request: TokenRequest):
     if not app_id or not app_certificate:
         raise HTTPException(status_code=500, detail="AGORA_APP_ID and AGORA_APP_CERTIFICATE environment variables must be set")
 
-    token = generate_token(app_id, app_certificate, request.channelName, request.userName)
+    token = generate_token(request.channelName, request.userName)
 
     return {"token": token}

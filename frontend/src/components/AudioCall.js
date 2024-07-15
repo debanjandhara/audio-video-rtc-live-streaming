@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+// import { useEffect, useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback } from 'react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 import { v4 as uuidv4 } from 'uuid';
 
 const APP_ID = process.env.REACT_APP_AGORA_APP_ID;
-const TOKEN_SERVER_URL = process.env.REACT_APP_TOKEN_SERVER_URL;
+const BACKEND_SERVER_URL = process.env.REACT_APP_BACKEND_SERVER_URL;
 
 const AudioCall = () => {
   const rtc = useRef({
@@ -26,11 +27,14 @@ const AudioCall = () => {
   if (!rtc.client) {
     rtc.client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
     console.log('Agora Client Initialised');
+    AgoraRTC.enableLogUpload();
+    AgoraRTC.setLogLevel(0);
   }
 
   const generateToken = useCallback(async () => {
+    console.log(`${BACKEND_SERVER_URL}/token`)
     try {
-      const response = await fetch(TOKEN_SERVER_URL, {
+      const response = await fetch(`${BACKEND_SERVER_URL}/token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -97,10 +101,12 @@ const AudioCall = () => {
       });
 
       rtc.client.on('user-published', async (user, mediaType) => {
+        await rtc.client.subscribe(user, mediaType);
         console.log('User published:', user.uid);
         try {
           if (mediaType === 'audio') {
-            await rtc.client.subscribe(user, mediaType);
+            const remoteAudioTrack = user.audioTrack;
+            remoteAudioTrack.play();
             setRemoteUsers((prevUsers) => {
               const updatedUsers = new Set(prevUsers);
               updatedUsers.add(user.uid);
@@ -114,7 +120,8 @@ const AudioCall = () => {
         }
       });
 
-      rtc.client.on('user-unpublished', (user) => {
+      rtc.client.on('user-unpublished', async (user) => {
+        await rtc.client.unsubscribe(user);
         console.log('User unpublished:', user.uid);
         setRemoteUsers((prevUsers) => {
           const updatedUsers = new Set(prevUsers);
@@ -127,7 +134,7 @@ const AudioCall = () => {
     } catch (error) {
       console.error('Error joining the channel:', error);
     }
-  }, [channelName, generateToken, sessionId, token]);
+  }, [rtc, channelName, generateToken, sessionId, token]);
 
   const leaveChannel = useCallback(async () => {
     try {
@@ -151,7 +158,7 @@ const AudioCall = () => {
     } catch (error) {
       console.error('Error leaving the channel:', error);
     }
-  }, [sessionId]);
+  }, [rtc.client, rtc.localAudioTrack, sessionId]);
 
   const toggleMute = useCallback(async () => {
     if (rtc.localAudioTrack) {
@@ -164,7 +171,7 @@ const AudioCall = () => {
         console.error('Error toggling mute:', error);
       }
     }
-  }, [isMuted]);
+  }, [isMuted, rtc.localAudioTrack]);
 
   const publishTrack = useCallback(async () => {
     try {
@@ -175,7 +182,7 @@ const AudioCall = () => {
     } catch (error) {
       console.error('Error publishing track:', error);
     }
-  }, []);
+  }, [rtc]);
 
   const unpublishTrack = useCallback(async () => {
     try {
@@ -188,7 +195,7 @@ const AudioCall = () => {
     } catch (error) {
       console.error('Error unpublishing track:', error);
     }
-  }, []);
+  }, [rtc.client, rtc.localAudioTrack]);
 
   const subscribeToUser = useCallback(async () => {
     if (!joined) {
@@ -207,7 +214,7 @@ const AudioCall = () => {
     } catch (error) {
       console.error('Error subscribing to user:', error);
     }
-  }, [remoteUsers, userId, joined]);
+  }, [joined, remoteUsers, rtc.client, userId]);
 
   const unsubscribeFromUser = useCallback(async () => {
     try {
@@ -221,7 +228,7 @@ const AudioCall = () => {
     } catch (error) {
       console.error('Error unsubscribing from user:', error);
     }
-  }, [remoteUsers, userId]);
+  }, [remoteUsers, rtc.client, userId]);
 
   return {
     rtc,

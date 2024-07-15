@@ -5,7 +5,11 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), './')
 
 from src.RtcTokenBuilder2 import *
 
-def generate_token(app_id, app_certificate, channel_name, user_name):
+import os
+app_id = os.getenv("AGORA_APP_ID")
+app_certificate = os.getenv("AGORA_APP_CERTIFICATE")
+
+def generate_token(channel_name, user_name, app_id = app_id, app_certificate = app_certificate):
     token_expire = 300  #  in seconds
     privilege_expire = 300 #  in seconds
     role = 1
