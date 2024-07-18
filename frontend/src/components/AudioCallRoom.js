@@ -1,25 +1,58 @@
+import '../styles/tailwind.css';
 import React, { useState, useEffect } from 'react';
-import { checkUserApproval, checkUserIsOwner, addParticipant, denyParticipant, listParticipants, upgradeParticipant } from '../utils/api';
-import AudioCall from './AudioCall';
+import { useParams } from 'react-router-dom';
 
-const AudioCallTesting = ({ meetingLink, userId }) => {
+import { checkUserApproval, checkUserIsOwner, addParticipant, denyParticipant, listParticipants, upgradeParticipant } from '../utils/api';
+import AgoraAudioCallFunctions from './AgoraAudioCallFunctions';
+
+const AudioCallRoom = ({ meetingLink, userId }) => {
+    const { meetingLink } = useParams();
+    const userId = localStorage.getItem('userId');
     const [isApproved, setIsApproved] = useState(false);
     const [token, setToken] = useState('');
-    const [channelName, setChannelName] = useState('');
+    // const [channelName, setChannelName] = useState('');
     const [statusMessage, setStatusMessage] = useState('Checking user status...');
     const [participants, setParticipants] = useState([]);
+
+    const [isMuted, setIsMuted] = useState(true);
+    const [stream, setStream] = useState(null);
 
     const {
         rtc,
         remoteUsers,
         joined,
-        setChannelName: setAudioCallChannelName,
-        setUserId: setAudioCallUserId,
+        channelName,
+        setChannelName,
+        sessionId,
+        setSessionId,
         joinChannel,
         leaveChannel,
-        toggleMute,
-        isMuted,
-    } = AudioCall();
+        // toggleMute,
+        // isMuted,
+    } = AgoraAudioCallFunctions();
+
+    useEffect(() => {
+        const getMicrophoneAccess = async () => {
+            try {
+                const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                setStream(micStream);
+            } catch (error) {
+                console.error('Error accessing the microphone:', error);
+            }
+        };
+
+        getMicrophoneAccess();
+    }, []);
+
+    const toggleMicrophone = () => {
+        if (stream) {
+            const audioTracks = stream.getAudioTracks();
+            audioTracks.forEach(track => (track.enabled = isMuted));
+            setIsMuted(!isMuted);
+        }
+    };
+
+
 
 
     useEffect(() => {
@@ -28,11 +61,15 @@ const AudioCallTesting = ({ meetingLink, userId }) => {
                 const response = await checkUserIsOwner(userId, meetingLink);
                 if (response && response.channelName) {
                     setToken(response.token);
+                    localStorage.setItem('token', response.token);
                     setChannelName(response.channelName);
+                    // setAudioCallChannelName(response.channelName);
+                    setSessionId(userId);
                     setStatusMessage('User is the owner. Token and ChannelName retrieved.');
                     console.log("Token:", response.token);
                     console.log("Channel Name:", response.channelName);
                     setIsApproved(true);
+                    joinChannel(response.channelName, userId);
                     listParticipantsHandler(); // Load participants list for owner
                     setInterval(listParticipantsHandler, 1000); // Poll participants every second
                 } else {
@@ -58,11 +95,15 @@ const AudioCallTesting = ({ meetingLink, userId }) => {
                     console.log('checkUserApproval response : ', response);
                     if (response && response.channelName) {
                         setToken(response.token);
+                        localStorage.setItem('token', response.token);
                         setChannelName(response.channelName);
+                        // setAudioCallChannelName(response.channelName);
+                        setSessionId(userId);
                         setIsApproved(true);
                         setStatusMessage('User approved. Token and ChannelName retrieved.');
                         console.log("Token:", response.token);
                         console.log("Channel Name:", response.channelName);
+                        joinChannel(response.channelName, userId);
                         clearInterval(interval);
                         listParticipantsHandler(); // Load participants list for owner
                     } else if (Date.now() - startTime > timeout) {
@@ -149,9 +190,22 @@ const AudioCallTesting = ({ meetingLink, userId }) => {
             </div>
             {channelName && token && (
                 <div className="bg-white p-6 rounded-lg shadow-md w-full md:w-1/2 lg:w-1/3 mt-4">
-                    <h2 className="text-xl font-semibold mb-2">Channel Information</h2>
-                    <p className="mb-2">Channel Name: {channelName}</p>
-                    <p className="mb-2">Token: {token}</p>
+                    <h2 className="text-xl font-semibold mb-2">Inside meeting room</h2>
+                    {/* <p className="mb-2">Channel Name: {channelName}</p>
+                    <p className="mb-2">Token: {token}</p> */}
+                    <button
+                        onClick={toggleMicrophone}
+                        className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                    >
+                        {isMuted ? 'Unmute Microphone' : 'Mute Microphone'}
+                    </button>
+                    <button
+                        onClick={leaveChannel}
+                        className={`px-4 py-2 rounded ${!joined ? 'bg-gray-300' : 'bg-red-500 text-white hover:bg-red-700'}`}
+                    >
+                        Leave Channel
+                    </button>
+
                 </div>
             )}
 
@@ -180,4 +234,4 @@ const AudioCallTesting = ({ meetingLink, userId }) => {
     );
 };
 
-export default AudioCallTesting;
+export default AudioCallRoom;

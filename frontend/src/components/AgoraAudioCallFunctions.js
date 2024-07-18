@@ -1,12 +1,16 @@
 // import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRef, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 import { v4 as uuidv4 } from 'uuid';
+
+
 
 const APP_ID = process.env.REACT_APP_AGORA_APP_ID;
 const BACKEND_SERVER_URL = process.env.REACT_APP_BACKEND_SERVER_URL;
 
-const AudioCall = () => {
+const AgoraAudioCallFunctions = () => {
+
   const rtc = useRef({
     localAudioTrack: null,
     client: null,
@@ -14,15 +18,19 @@ const AudioCall = () => {
   const [remoteUsers, setRemoteUsers] = useState(new Set());
   const [joined, setJoined] = useState(false);
   const [channelName, setChannelName] = useState('');
+  const [sessionId, setSessionId] = useState('');
   const [token, setToken] = useState('');
   const [isMuted, setIsMuted] = useState(false);
   const [userId, setUserId] = useState('');
   const [isPublished, setIsPublished] = useState(false);
+  const navigate = useNavigate();
 
-  const sessionId = localStorage.getItem('session_id') || uuidv4();
-  if (!localStorage.getItem('session_id')) {
-    localStorage.setItem('session_id', sessionId);
-  }
+
+
+  // const sessionId = localStorage.getItem('session_id') || uuidv4();
+  // if (!localStorage.getItem('session_id')) {
+  //   localStorage.setItem('session_id', sessionId);
+  // }
 
   if (!rtc.client) {
     rtc.client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
@@ -55,7 +63,7 @@ const AudioCall = () => {
     }
   }, [channelName, sessionId]);
 
-  const joinChannel = useCallback(async () => {
+  const joinChannel = useCallback(async (channelName, sessionId) => {
     try {
       const storedToken = localStorage.getItem('token');
       if (!storedToken) {
@@ -63,6 +71,7 @@ const AudioCall = () => {
         await generateToken();
       }
 
+      console.log('Before Joining channel:', channelName, 'with userName:', sessionId);
       await rtc.client.join(APP_ID, channelName, storedToken, sessionId);
       console.log('Joined the channel:', channelName, 'with userName:', sessionId);
       rtc.localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
@@ -137,6 +146,9 @@ const AudioCall = () => {
   }, [rtc, channelName, generateToken, sessionId, token]);
 
   const leaveChannel = useCallback(async () => {
+
+    
+
     try {
       if (rtc.localAudioTrack) {
         await rtc.client.unpublish([rtc.localAudioTrack]);
@@ -155,6 +167,8 @@ const AudioCall = () => {
       });
 
       console.log('Left Channel');
+      navigate('/');
+
     } catch (error) {
       console.error('Error leaving the channel:', error);
     }
@@ -237,11 +251,13 @@ const AudioCall = () => {
     channelName,
     setChannelName,
     token,
+    setToken,
     isMuted,
     userId,
     setUserId,
     isPublished,
     sessionId,
+    setSessionId,
     generateToken,
     joinChannel,
     leaveChannel,
@@ -253,4 +269,4 @@ const AudioCall = () => {
   };
 };
 
-export default AudioCall;
+export default AgoraAudioCallFunctions;

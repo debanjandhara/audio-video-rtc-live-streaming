@@ -1,0 +1,19 @@
+------- Audio Calls -----------
+ > Code is for Development Mode, not for Production
+ > Create Dockerfile for Services
+ > SQLAlchemy --> async not implemented (production not handled)
+ > APIs Not Rate Limited, Queue not added for concurrent requests, Multiple Threading is not configured.
+
+
+--> Agora Frontend Issues [codefiles_here.js] :
+ > Rejoin after Token Expiration : Token Generation and Adding of Token once Token Expires (For testing token exipiry is set to 300 seconds)
+ > Token Generation with UID (integer) not with UUID Module (string). Agora has some problems with string usernames.
+
+
+--> Backend Issues [codefiles_here.py] : 
+ > Cleanup Database API : There is an api to clean the database, to empty the meeting link which are not used further. Update : need to change the schema of the Meeting database from recording 'created_date', to 'last_joined' date, and then delete based, on the 'owner_last_joined_date'. If not joined, then delete based on 'created_date'
+
+
+--> Extras : 
+ > Remote Users List : Not working fine : (It messes up the owner / exsisting particiants those who joined earlier.)
+ > Agora don't exit channel and leave the Microphone, when a user suddenly closes the window / device.

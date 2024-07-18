@@ -1,3 +1,10 @@
+# Local Database
+test.db
+
+# CSV For Viewing DB Tables
+meetings.csv
+participants.csv
+
 # Local Data Storage Folder
 data/
 backup_code/

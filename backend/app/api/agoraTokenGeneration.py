@@ -1,7 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-from app.utils.agora_utils import generate_token
-from app.models.agora_models import TokenRequest
+from app.utils.agoraUtils import generate_token
+from app.models.agoraModels import TokenRequest
 import os
 
 router = APIRouter()

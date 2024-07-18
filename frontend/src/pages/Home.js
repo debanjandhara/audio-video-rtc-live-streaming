@@ -84,12 +84,6 @@ const Home = () => {
                 />
                 <button onClick={handleJoinMeeting} className="bg-blue-500 text-white p-2 rounded">Join Meeting</button>
             </div>
-            {/* {responseMessage && (
-                <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4" role="alert">
-                    <p className="font-bold">API Response</p>
-                    <p>{responseMessage}</p>
-                </div>
-            )} */}
         </div>
     );
 };

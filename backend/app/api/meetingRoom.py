@@ -1,8 +1,9 @@
 from fastapi import FastAPI, APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.models.meeting_models import Meeting, Participant
-from app.models.meeting_models import CreateMeeting, ParticipantClass, ListParticipants
+from app.models.meetingModels import Meeting, Participant
+from app.models.meetingModels import CreateMeeting, ParticipantClass, ListParticipants
 from app.utils.database import *
+from app.models.meetingMgmtDB import *
 
 # app = FastAPI()
 router = APIRouter()

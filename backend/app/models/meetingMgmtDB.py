@@ -28,16 +28,3 @@ class Participant(Base):
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base.metadata.create_all(bind=engine)
-
-
-from pydantic import BaseModel
-
-class CreateMeeting(BaseModel):
-    user_id: str
-
-class ParticipantClass(BaseModel):
-    participantID: str
-    meetingId: str
-
-class ListParticipants(BaseModel):
-    meetingId: str

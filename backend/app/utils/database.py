@@ -1,20 +1,12 @@
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import Depends
 from sqlalchemy.orm import Session
 
-from sqlalchemy import create_engine, Column, String, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, sessionmaker
-from sqlalchemy_utils import database_exists, create_database
-
-from app.models.meeting_models import Base, Meeting, Participant, engine, SessionLocal
+from app.models.meetingModels import Base, Meeting, Participant, engine, SessionLocal
 from app.utils.others import generate_meeting_id, generate_channel_name
-from app.utils.agora_utils import generate_token
+from app.utils.agoraUtils import generate_token
 
 from datetime import datetime, timedelta
+from app.models.meetingMgmtDB import *
 
 
 
@@ -22,7 +14,7 @@ from datetime import datetime, timedelta
 
 
 import csv
-from app.models.meeting_models import Meeting, Participant
+from app.models.meetingModels import Meeting, Participant
 
 
 def get_db_for_extract():
@@ -68,7 +60,8 @@ def extract_db_to_csv():
     
     db.close()
 
-extract_db_to_csv()
+
+# ---------- Main Code Starts Here -------------
 
 def get_db():
     db = SessionLocal()
@@ -77,8 +70,6 @@ def get_db():
         extract_db_to_csv()
     finally:
         db.close()
-
-
 
 def add_participant(participantID: str, meetingId: str, db: Session = Depends(get_db)):
     # Ensure meeting ID exists and get the channel name

@@ -1,5 +1,6 @@
+from app.api import agoraTokenGeneration
 from fastapi import FastAPI
-from app.api import agora, meeting_scheduling
+from app.api import meetingRoom
 
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -13,8 +14,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(agora.router)
-app.include_router(meeting_scheduling.router)
+app.include_router(agoraTokenGeneration.router)
+app.include_router(meetingRoom.router)
 
 @app.get("/")
 def home():

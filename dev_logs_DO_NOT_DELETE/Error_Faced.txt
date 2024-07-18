@@ -5,6 +5,7 @@ I also noticed that the error happens on the client because the server does not 
 
 To reproduce the error: Create an React application using SocketIO Client, perform authentication in 2 or more tabs and execute any POST (create) call to the server, one of them will hang generating the error (Timeout of 5000ms exceeded calling create on ...)
 
+-------------------
 
 Error :     data: {"desc":"dynamic key expired","retry":false,"csIp":"13.71.36.21"} AgoraRTCExc
 
@@ -12,18 +13,20 @@ The solution was to make sure your UID in token generation is an integer, string
 
 Generating Integer Session ID: The sessionIdString is obtained from localStorage or generated using uuidv4(). It is then converted to an integer using parseInt(sessionIdString.replace(/-/g, ''), 16). This removes dashes from the UUID string and parses it as a hexadecimal number.
 
-
 --------------------
 
-UserID str, UserID int ... Session id int, change
+From UserID(string) Token Generation, to Token Generation by UserID(int)
+
+--------------------
 
 Token : 006963c1a3084614e2cb469fbc72df183f9IAAUURtRFHyXKR/4cYEfOB4Da//capmXWOBzYQotuULrqwAAAACUlt/FIgDrlGYAArd7ZgQAAQAQDgAAAgAQDgAAAwAQDgAABAAQDgAA
 
 But Correct Token : 007eJxTYFghdurRtgXqGadf+9WbvdR9/Fikzk6N4bLrbZ7V08z/736kwGBpZpxsmGhsYGFiZmiSapScZGJmmZaUbG6UkmZoYZxm6T6tKk2Aj4HhsOsvJkYGRgYWIAbxmcAkM5hkAZNsDCWpxSXJhioMZgYm5klGKca6ZiaWqbomRgamuhZGZma6ySZGFpaWBsbJFinmACh3KRE=
 
-python module, src 
+Need the src folder from the Agora/tools repo of Agora Github Account 
 
 -------------------
 
+Created Multiple Agora Clients in Agora Frontend - Joining Issue [Resolved]
 
-Created Multiple Agora Clients in Agora React, need to resolve it 
+-------------------
