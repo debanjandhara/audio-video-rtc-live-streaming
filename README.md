@@ -86,9 +86,9 @@ This project simulates voice calling, video calling, and live streaming via Agor
 
 #### Additional Commands
 
-1. To start the development server with `npm run dev`:
+1. To start the development server with a build version `npm run build` ; Run till Step 2 from above, then :
     ```sh
-    npm run dev
+    npm run build
     ```
 
 2. To install the `serve` package globally for serving the production build:
