@@ -1,8 +1,11 @@
 import './Home.css';
 import '../styles/tailwind.css'
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+
 import { createMeeting } from '../utils/api';
+
 
 const Home = () => {
     const [meetingId, setMeetingId] = useState('');
@@ -21,7 +24,6 @@ const Home = () => {
         try {
             const response = await createMeeting(userId);
 
-            // Extract the meeting_id safely
             if (response && response.meeting_id) {
                 const meetingId = response.meeting_id;
                 const meetingLink = `${window.location.origin}/audio/${meetingId}`;
@@ -35,7 +37,6 @@ const Home = () => {
             setResponseMessage('Error creating meeting. Please try again.');
         }
     };
-
 
     const handleJoinMeeting = () => {
         if (meetingId) {

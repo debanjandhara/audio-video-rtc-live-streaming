@@ -1,21 +1,16 @@
-from fastapi import Depends
-from sqlalchemy.orm import Session
+import csv
+from datetime import datetime, timedelta
 
-from app.models.meetingModels import Base, Meeting, Participant, engine, SessionLocal
 from app.utils.others import generate_meeting_id, generate_channel_name
 from app.utils.agoraUtils import generate_token
 
-from datetime import datetime, timedelta
+from app.models.meetingModels import *
 from app.models.meetingMgmtDB import *
 
+from fastapi import Depends
+from sqlalchemy.orm import Session
 
-
-# ----------------------------------------------
-
-
-import csv
-from app.models.meetingModels import Meeting, Participant
-
+# >>> -------- From .db to .csv for Visualization -----------
 
 def get_db_for_extract():
     db = SessionLocal()
@@ -61,7 +56,10 @@ def extract_db_to_csv():
     db.close()
 
 
-# ---------- Main Code Starts Here -------------
+# >>> ---------- END ------------
+
+
+# -------------- Main Code Starts Here -------------
 
 def get_db():
     db = SessionLocal()
@@ -71,8 +69,23 @@ def get_db():
     finally:
         db.close()
 
+# Create Meeting Link 
+def add_meeting(user_id: str, db: Session = Depends(get_db)):
+    while True:
+        meeting_id = generate_meeting_id()
+        existing_meeting = db.query(Meeting).filter(Meeting.meetingId == meeting_id).first()
+        if not existing_meeting:
+            break
+
+    channel_name = generate_channel_name()
+    meeting = Meeting(meetingId=meeting_id, channelName=channel_name, ownerID=user_id)
+    db.add(meeting)
+    db.commit()
+    db.refresh(meeting)
+    return {"meeting_id": meeting.meetingId}
+
+# Add Participants to Meeting
 def add_participant(participantID: str, meetingId: str, db: Session = Depends(get_db)):
-    # Ensure meeting ID exists and get the channel name
     approvalStatus = 'pending'
     meeting = db.query(Meeting).filter(Meeting.meetingId == meetingId).first()
     if meeting:
@@ -102,6 +115,7 @@ def add_participant(participantID: str, meetingId: str, db: Session = Depends(ge
     else:
         return "Failure - No Meeting ID"
 
+# List of all the Participants 
 def list_participants(meetingId: str, db: Session = Depends(get_db)):
     participants = db.query(Participant).filter(
         Participant.meetingId == meetingId,
@@ -110,6 +124,7 @@ def list_participants(meetingId: str, db: Session = Depends(get_db)):
     participant_ids = [participant.participantID for participant in participants]
     return participant_ids
 
+# Participants : from 'pending' to 'approved'
 def upgrade_participant(participantID: str, meetingLink: str, db: Session = Depends(get_db)):
     participant = db.query(Participant).filter(Participant.participantID == participantID, Participant.meetingId == meetingLink).first()
     if participant:
@@ -120,6 +135,7 @@ def upgrade_participant(participantID: str, meetingLink: str, db: Session = Depe
     else:
         return "Failure - Either Meeting ID Wrong / Participants not in meeting"
 
+# Deny entry to Participants
 def deny_participant(participantID: str, meetingLink: str, db: Session = Depends(get_db)):
     participant = db.query(Participant).filter(Participant.participantID == participantID, Participant.meetingId == meetingLink).first()
     if participant:
@@ -130,20 +146,7 @@ def deny_participant(participantID: str, meetingLink: str, db: Session = Depends
     else:
         return "Failure - Either Meeting ID Wrong / Participants not in meeting"
 
-def delete_old_meetings(db: Session = Depends(get_db)):
-    limit_date = datetime.now() - timedelta(days=0)             # Seven Days if the Limit
-    old_meetings = db.query(Meeting).filter(Meeting.created_at < limit_date).all()
-    old_meeting_ids = [meeting.meetingId for meeting in old_meetings]
-
-    for meeting_id in old_meeting_ids:
-        # Delete participants
-        db.query(Participant).filter(Participant.meetingId == meeting_id).delete()
-        # Delete meeting
-        db.query(Meeting).filter(Meeting.meetingId == meeting_id).delete()
-
-    db.commit()
-    return "Success"
-
+# Meeting Room Entry Verification for Owners - Refer to Flow for the Logic : Ask the Dev for Flow
 def check_user_is_owner_n_get_token(userId: str, meetingId: str, db: Session = Depends(get_db)):
     meeting = db.query(Meeting).filter(Meeting.meetingId == meetingId).first()
     if meeting:
@@ -155,6 +158,7 @@ def check_user_is_owner_n_get_token(userId: str, meetingId: str, db: Session = D
         else:
             return {"token": "false", "channelName": ""}
 
+# Meeting Room Entry Verification for Participants - Refer to Flow for the Logic : Ask the Dev for Flow
 def check_user_approval_n_get_token(participantID: str, meetingId: str, db: Session = Depends(get_db)):
     participant = db.query(Participant).filter(Participant.participantID == participantID, Participant.meetingId == meetingId).first()
     if participant:
@@ -177,19 +181,20 @@ def check_user_approval_n_get_token(participantID: str, meetingId: str, db: Sess
         print(f"Participant {participantID} not found in meeting {meetingId}.")
         return f"Request Failed - Participant {participantID} not found in meeting {meetingId}."
 
-def add_meeting(user_id: str, db: Session = Depends(get_db)):
-    while True:
-        meeting_id = generate_meeting_id()
-        existing_meeting = db.query(Meeting).filter(Meeting.meetingId == meeting_id).first()
-        if not existing_meeting:
-            break
 
-    channel_name = generate_channel_name()
-    meeting = Meeting(meetingId=meeting_id, channelName=channel_name, ownerID=user_id)
-    db.add(meeting)
+def delete_old_meetings(db: Session = Depends(get_db)):
+    # **********************
+    # SPECIAL FUNCTION TO CLEAN ALL THE EXTRA MEETING IDs from the database that are left, no ones joins... Set a Limit, and run it like a service, or a cron Job to Trigger the API ; Need to Correct a bit ; Read : dev_logs_DO_NOT_DELETE\Read this for devs.txt ; Line : 14
+    # **********************
+    limit_date = datetime.now() - timedelta(days=0)             # Seven Days if the Limit
+    old_meetings = db.query(Meeting).filter(Meeting.created_at < limit_date).all()
+    old_meeting_ids = [meeting.meetingId for meeting in old_meetings]
+
+    for meeting_id in old_meeting_ids:
+        # Delete participants
+        db.query(Participant).filter(Participant.meetingId == meeting_id).delete()
+        # Delete meeting
+        db.query(Meeting).filter(Meeting.meetingId == meeting_id).delete()
+
     db.commit()
-    db.refresh(meeting)
-    return {"meeting_id": meeting.meetingId}
-
-def get_participants_by_meeting(meetingId: str, db: Session = Depends(get_db)):
-    return db.query(Participant).filter(Participant.meetingId == meetingId).all()
+    return "Success"

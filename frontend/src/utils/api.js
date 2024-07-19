@@ -3,6 +3,7 @@
 // // Load environment variables from .env file
 // dotenv.config();
 
+// This Method Just Working FIne
 const BACKEND_SERVER_URL = process.env.REACT_APP_BACKEND_SERVER_URL;
 
 const headers = {
@@ -38,22 +39,9 @@ export async function checkMeetingApiHealth() {
   });
   const data = await response.json();
   return data;
-
-
 }
 
-// Function to create a meeting
-// export async function createMeeting(userId) {
-//   const response = await fetch(`${BACKEND_SERVER_URL}/create_meeting`, {
-//     method: 'POST',
-//     headers,
-//     body: JSON.stringify({ user_id: userId }),
-//   });
-//   console.log(`APi Side Respoce : ${response}`)
-//   const data = await response.json();
-//   return data;
-// }
-
+// Function to create New Meeting ID
 export async function createMeeting(userId) {
   try {
     const response = await fetch(`${BACKEND_SERVER_URL}/create_meeting`, {
@@ -64,19 +52,10 @@ export async function createMeeting(userId) {
       body: JSON.stringify({ user_id: userId }),
     });
 
-    // Log the response status
-    console.log(`Response status: ${response.status}`);
-
-    // Check if the response is successful
     if (!response.ok) {
       throw new Error(`HTTP error! Status: ${response.status}`);
     }
-
     const data = await response.json();
-
-    // Log the response data
-    console.log(`API Response: ${JSON.stringify(data)}`);
-
     return data;
   } catch (error) {
     console.error('API request failed:', error);
@@ -117,7 +96,7 @@ export async function denyParticipant(userId, meetingLink) {
   return data;
 }
 
-// Function to upgrade participant's request
+// Function to accept participant's request
 export async function upgradeParticipant(userId, meetingLink) {
   const response = await fetch(`${BACKEND_SERVER_URL}/upgrade_participant`, {
     method: 'POST',

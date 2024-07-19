@@ -1,7 +1,7 @@
 from app.api import agoraTokenGeneration
-from fastapi import FastAPI
 from app.api import meetingRoom
 
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()

@@ -70,17 +70,35 @@ This project simulates voice calling, video calling, and live streaming via Agor
 - Node.js and npm
 
 #### Windows, Linux, Mac
+
 1. Navigate to the `frontend` directory:
     ```sh
     cd frontend
     ```
-2. Install dependencies (Needed for First time use only) :
+2. Install dependencies (Needed for First time use only):
     ```sh
     npm install
     ```
 3. Start the frontend server:
     ```sh
     npm start
+    ```
+
+#### Additional Commands
+
+1. To start the development server with `npm run dev`:
+    ```sh
+    npm run dev
+    ```
+
+2. To install the `serve` package globally for serving the production build:
+    ```sh
+    npm install -g serve
+    ```
+
+3. To serve the production build on port 3000:
+    ```sh
+    serve -s build -l 3000
     ```
 
 ## Environment Setup
@@ -91,20 +109,43 @@ Copy the `.env.example` file to `.env` and use the correct Agora tokens.
 
 ### Backend
 
-- `api/agora.py`: Contains the routes for generating Agora tokens.
-- `models/agora_models.py`: Contains Pydantic models for request validation.
-- `utils/agora_utils.py`: Contains the function to generate Agora tokens.
-- `utils/src`: Contains raw code from the Agora Python package (pip install agora-token-builder is deprecated).
+#### API
+
+- `backend/app/api/agoraTokenGeneration.py`: Defines the Agora API for token generation; the main function is in `utils`.
+- `backend/app/api/meetingRoom.py`: Manages meeting rooms.
+
+#### Models
+
+- `backend/app/models/agoraModels.py`: Pydantic models for FastAPI related to Agora.
+- `backend/app/models/meetingMgmtDB.py`: SQLAlchemy database initialization and table definitions.
+- `backend/app/models/meetingModels.py`: Pydantic models for FastAPI meeting management.
+
+#### Utils
+
+- `backend/app/utils/src`: Code directly copied from the official Agora repository, as the Python package is deprecated.
+- `backend/app/utils/agoraUtils.py`: Function to generate Agora tokens.
+- `backend/app/utils/database.py`: Handles all interactions with the database.
 
 The backend is responsible for generating Agora verified tokens based on the username and channel name.
 
 ### Frontend
 
-- `src/components`: Contains individual logic components.
-- `src/pages`: Contains components for displaying pages.
-- `src/utils`: Contains functions for API calls and other utilities.
+#### Components
 
-The frontend is written in React. Currently, all the code is in `src/pages/AudioCallPage.js`. The `App.js` file is used for routing.
+- `frontend/src/components/AgoraAudioCallFunctions.js`: Main function for handling Agora SDK audio, joining, publishing, etc.
+- `frontend/src/components/AudioCallRoom.js`: Contains backend API and meeting management logic, and uses Agora SDK functions from `AgoraAudioCallFunctions.js`.
+
+#### Utils
+
+- `frontend/src/utils/api.js`: Lists all imported APIs from the backend server.
+
+#### Pages
+
+- `frontend/src/pages/Home.js`: Home page for creating meetings, joining meetings, and setting the user ID (user authentication not configured).
+
+#### root
+
+- `frontend/src/App.js`: Defines the routes for the pages.
 
 ## Project Purpose
 

@@ -2,10 +2,9 @@ import os
 from datetime import datetime, timezone
 
 from sqlalchemy import create_engine, Column, String, ForeignKey, DateTime
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
 
-import os
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 Base = declarative_base()

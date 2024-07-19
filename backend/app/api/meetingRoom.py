@@ -1,11 +1,9 @@
-from fastapi import FastAPI, APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from app.models.meetingModels import Meeting, Participant
-from app.models.meetingModels import CreateMeeting, ParticipantClass, ListParticipants
-from app.utils.database import *
+from app.models.meetingModels import *
 from app.models.meetingMgmtDB import *
+from app.utils.database import *
 
-# app = FastAPI()
 router = APIRouter()
 
 @router.post("/meeting_api_health")
@@ -32,10 +30,6 @@ def api_deny_participant(request: ParticipantClass, db: Session = Depends(get_db
 def api_upgrade_participant(request: ParticipantClass, db: Session = Depends(get_db)):
     return {"message": f"{upgrade_participant(request.participantID, request.meetingId, db)}"}
 
-@router.delete("/delete_old_meetings")
-def api_delete_old_meetings(db: Session = Depends(get_db)):
-    return {"message": f"{delete_old_meetings(db)}"} 
-
 @router.post("/check_user_is_owner")
 def api_check_user_is_owner(request: ParticipantClass, db: Session = Depends(get_db)):
     return check_user_is_owner_n_get_token(request.participantID, request.meetingId, db)
@@ -44,4 +38,7 @@ def api_check_user_is_owner(request: ParticipantClass, db: Session = Depends(get
 def api_check_user_approval(request: ParticipantClass, db: Session = Depends(get_db)):
     return check_user_approval_n_get_token(request.participantID, request.meetingId, db)
 
-# app.include_router(router)
+# SPECIAL FUNCTION TO CLEAN ALL THE EXTRA MEETING IDs - to know more Read : backend\app\utils\database.py ; Function : delete_old_meetings()
+@router.delete("/delete_old_meetings")
+def api_delete_old_meetings(db: Session = Depends(get_db)):
+    return {"message": f"{delete_old_meetings(db)}"} 

@@ -1,61 +1,36 @@
 import '../styles/tailwind.css';
+
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { checkUserApproval, checkUserIsOwner, addParticipant, denyParticipant, listParticipants, upgradeParticipant } from '../utils/api';
 import AgoraAudioCallFunctions from './AgoraAudioCallFunctions';
 
-const AudioCallRoom = ({ meetingLink, userId }) => {
+
+
+const AudioCallRoom = () => {
     const { meetingLink } = useParams();
     const userId = localStorage.getItem('userId');
     const [isApproved, setIsApproved] = useState(false);
     const [token, setToken] = useState('');
-    // const [channelName, setChannelName] = useState('');
     const [statusMessage, setStatusMessage] = useState('Checking user status...');
     const [participants, setParticipants] = useState([]);
 
-    const [isMuted, setIsMuted] = useState(true);
-    const [stream, setStream] = useState(null);
-
     const {
-        rtc,
-        remoteUsers,
         joined,
         channelName,
         setChannelName,
-        sessionId,
         setSessionId,
         joinChannel,
         leaveChannel,
-        // toggleMute,
-        // isMuted,
+        isMuted,
+        toggleMute,
     } = AgoraAudioCallFunctions();
 
-    useEffect(() => {
-        const getMicrophoneAccess = async () => {
-            try {
-                const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                setStream(micStream);
-            } catch (error) {
-                console.error('Error accessing the microphone:', error);
-            }
-        };
-
-        getMicrophoneAccess();
-    }, []);
-
-    const toggleMicrophone = () => {
-        if (stream) {
-            const audioTracks = stream.getAudioTracks();
-            audioTracks.forEach(track => (track.enabled = isMuted));
-            setIsMuted(!isMuted);
-        }
-    };
-
-
-
 
     useEffect(() => {
+
+        // Check if User is Owner - Then Grant Entry
         const checkUserStatus = async () => {
             try {
                 const response = await checkUserIsOwner(userId, meetingLink);
@@ -63,19 +38,24 @@ const AudioCallRoom = ({ meetingLink, userId }) => {
                     setToken(response.token);
                     localStorage.setItem('token', response.token);
                     setChannelName(response.channelName);
-                    // setAudioCallChannelName(response.channelName);
                     setSessionId(userId);
+
                     setStatusMessage('User is the owner. Token and ChannelName retrieved.');
                     console.log("Token:", response.token);
                     console.log("Channel Name:", response.channelName);
+
                     setIsApproved(true);
+
                     joinChannel(response.channelName, userId);
+                    // muteAfterJoining();
                     listParticipantsHandler(); // Load participants list for owner
                     setInterval(listParticipantsHandler, 1000); // Poll participants every second
+
                 } else {
                     setStatusMessage('User is not the owner. Checking approval status...');
                     await addParticipant(userId, meetingLink);
                     checkUserApprovalStatus();
+
                 }
             } catch (error) {
                 console.error("Error checking user status:", error);
@@ -83,8 +63,9 @@ const AudioCallRoom = ({ meetingLink, userId }) => {
             }
         };
 
+        // If not Owner, Wait Until Participant is Approved by Owner
         const checkUserApprovalStatus = async () => {
-            const timeout = 300000; // After 5 mins, deny the participant
+            const timeout = 300000; // After 5 mins, Deny the participant
             const startTime = Date.now();
 
             const interval = setInterval(async () => {
@@ -97,31 +78,41 @@ const AudioCallRoom = ({ meetingLink, userId }) => {
                         setToken(response.token);
                         localStorage.setItem('token', response.token);
                         setChannelName(response.channelName);
-                        // setAudioCallChannelName(response.channelName);
                         setSessionId(userId);
+
                         setIsApproved(true);
+
                         setStatusMessage('User approved. Token and ChannelName retrieved.');
                         console.log("Token:", response.token);
                         console.log("Channel Name:", response.channelName);
+
                         joinChannel(response.channelName, userId);
+                        // muteAfterJoining();
                         clearInterval(interval);
                         listParticipantsHandler(); // Load participants list for owner
+
                     } else if (Date.now() - startTime > timeout) {
                         setStatusMessage('User request exhausted.');
                         console.log("User request exhausted");
                         clearInterval(interval);
                         await denyParticipant(userId, meetingLink);
+
                     } else if (response && response.token === 'denied') {
                         setStatusMessage('User request denied. Please rejoin or refresh the page.');
                         clearInterval(interval);
+
                     } else if (response && response.token === 'pending') {
                         setStatusMessage('User request is pending approval.');
+
                     } else if (response && response.token === 'approved') {
                         setStatusMessage('User request is approved.');
+
                     } else {
                         setStatusMessage('User waiting for approval.');
-                        console.log("User waiting for approval.");
+                        console.log("User waiting for approval.");   
+
                     }
+
                 } catch (error) {
                     console.error("Error checking user approval:", error);
                     clearInterval(interval);
@@ -130,6 +121,7 @@ const AudioCallRoom = ({ meetingLink, userId }) => {
             }, 2000);
         };
 
+        // List all the Participants
         const listParticipantsHandler = async () => {
             try {
                 const response = await listParticipants(meetingLink);
@@ -149,6 +141,7 @@ const AudioCallRoom = ({ meetingLink, userId }) => {
         checkUserStatus();
     }, [meetingLink, userId]);
 
+    // Accept Button - Participants Accept Button
     const handleAcceptParticipant = async (participantId) => {
         try {
             await upgradeParticipant(participantId, meetingLink);
@@ -159,6 +152,7 @@ const AudioCallRoom = ({ meetingLink, userId }) => {
         }
     };
 
+    // Deny Button - Participants Deny Button
     const handleDenyParticipant = async (participantId) => {
         try {
             await denyParticipant(participantId, meetingLink);
@@ -191,10 +185,11 @@ const AudioCallRoom = ({ meetingLink, userId }) => {
             {channelName && token && (
                 <div className="bg-white p-6 rounded-lg shadow-md w-full md:w-1/2 lg:w-1/3 mt-4">
                     <h2 className="text-xl font-semibold mb-2">Inside meeting room</h2>
+                    <p>There need to be done a small debug - press the mute/unmute button 2 times to make it mute, for the first time, then it will work flawless</p>
                     {/* <p className="mb-2">Channel Name: {channelName}</p>
                     <p className="mb-2">Token: {token}</p> */}
                     <button
-                        onClick={toggleMicrophone}
+                        onClick={toggleMute}
                         className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
                     >
                         {isMuted ? 'Unmute Microphone' : 'Mute Microphone'}
@@ -205,6 +200,7 @@ const AudioCallRoom = ({ meetingLink, userId }) => {
                     >
                         Leave Channel
                     </button>
+                    <p>Please do not aduptly close the window, it costs minutes from Agora... Please leave the meeting when you're done.</p>
 
                 </div>
             )}
