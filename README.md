@@ -49,7 +49,7 @@ This project simulates voice calling, video calling, and live streaming via Agor
     ```
 3. Create a virtual environment (Needed for First time use only) :
     ```sh
-    python -m venv venv
+    python3 -m venv venv
     ```
 4. Activate the virtual environment:
     ```sh
@@ -61,7 +61,7 @@ This project simulates voice calling, video calling, and live streaming via Agor
     ```
 6. Run the backend server:
     ```sh
-    python run.py
+    python3 run.py
     ```
 
 ### Frontend (React)
